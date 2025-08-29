@@ -1,0 +1,109 @@
+# 依赖目录
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# 日志文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# 运行时数据
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# 覆盖率目录
+coverage/
+.nyc_output/
+
+# 依赖缓存
+.npm/
+.eslintcache
+
+# 可选的npm缓存目录
+.npm
+
+# 可选的REPL历史
+.node_repl_history
+
+# 输出的二进制文件
+*.tgz
+
+# Yarn完整性文件
+.yarn-integrity
+
+# 上传的文件
+uploads/*
+!uploads/.gitkeep
+
+# 临时文件
+tmp/
+temp/
+
+# 编辑器和IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 备份文件
+*.backup
+*.bak
+*.orig
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+
+# SSL证书
+*.pem
+*.key
+*.crt
+*.csr
+
+# Docker相关（保留配置文件）
+.dockerignore
+
+# PM2相关
+.pm2/
+ecosystem.config.js
+
+# 测试文件
+test_*.html
+debug_*.html
+
+# 构建输出
+dist/
+build/
+
+# 缓存
+.cache/
+
+# 本地配置
+config.local.js
+settings.local.json

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>豆包图像处理聊天工具</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>豆包图像处理聊天工具</h1>
+            <p>支持图像分析和智能对话</p>
+        </header>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <!-- 消息将在这里显示 -->
+                <div class="welcome-message">
+                    <h3>👋 欢迎使用豆包图像处理工具</h3>
+                    <p>您可以：</p>
+                    <ul>
+                        <li>📸 上传图片进行分析</li>
+                        <li>💬 与AI进行对话</li>
+                        <li>🔍 询问图片中的内容</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <div class="image-preview" id="imagePreview" style="display: none;">
+                    <div class="preview-content">
+                        <img id="previewImage" src="" alt="预览图片">
+                        <button class="remove-image" id="removeImage">×</button>
+                    </div>
+                </div>
+                
+                <div class="input-section">
+                    <div class="input-wrapper">
+                        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                        <input type="text" id="imageUrlInput" placeholder="或粘贴图片链接..." style="display: none;">
+                        <div class="image-controls">
+                            <button class="image-btn" id="imageBtn" title="上传图片">
+                                📷
+                            </button>
+                            <button class="url-btn" id="urlBtn" title="使用图片链接">
+                                🔗
+                            </button>
+                        </div>
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="输入您的问题或上传图片..." 
+                            rows="1"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn" disabled>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-container">
+            <div class="settings-header">
+                <h3>⚙️ 设置</h3>
+                <button class="toggle-settings" id="toggleSettings">展开</button>
+                <button class="logs-btn" id="showLogsBtn">📊 日志</button>
+            </div>
+            <div class="settings-content" id="settingsContent" style="display: none;">
+                <div class="setting-item">
+                    <label for="apiKey">API Key:</label>
+                    <input type="password" id="apiKey" placeholder="请输入您的 ARK API Key">
+                </div>
+                <div class="setting-item">
+                    <label for="modelName">模型:</label>
+                    <input type="text" id="modelName" value="doubao-seed-1-6-vision-250815" readonly>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="streamMode" checked>
+                        启用流式响应
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="debugMode">
+                        调试模式（显示思考过程构建详情）
+                    </label>
+                </div>
+
+                <div class="setting-divider"></div>
+                
+                <div class="setting-section">
+                    <h4>🗂️ 阿里云OSS配置 (图片上传)</h4>
+                </div>
+
+                <div class="setting-item">
+                    <label for="ossAccessKeyId">Access Key ID:</label>
+                    <input type="text" id="ossAccessKeyId" placeholder="输入阿里云OSS Access Key ID">
+                </div>
+
+                <div class="setting-item">
+                    <label for="ossAccessKeySecret">Access Key Secret:</label>
+                    <input type="password" id="ossAccessKeySecret" placeholder="输入阿里云OSS Access Key Secret">
+                </div>
+
+                <div class="setting-item">
+                    <label for="ossBucket">Bucket名称:</label>
+                    <input type="text" id="ossBucket" placeholder="例如：canghe666">
+                </div>
+
+                <div class="setting-item">
+                    <label for="ossRegion">区域:</label>
+                    <input type="text" id="ossRegion" placeholder="例如：oss-cn-chengdu">
+                </div>
+
+                <div class="setting-item">
+                    <label for="ossPath">存储路径:</label>
+                    <input type="text" id="ossPath" placeholder="例如：blog/ (可选)">
+                </div>
+
+                <div class="setting-item">
+                    <label for="ossDomain">自定义域名:</label>
+                    <input type="text" id="ossDomain" placeholder="例如：https://cdn.canghecode.com (可选)">
+                </div>
+
+                <div class="setting-item oss-buttons">
+                    <button id="saveOssBtn" class="oss-btn save-btn">💾 保存OSS配置</button>
+                    <button id="testOssBtn" class="oss-btn test-btn">🔗 测试连接</button>
+                    <button id="useUserOssBtn" class="oss-btn quick-btn">⚡ 使用我的配置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保留loading元素供非流式模式使用，但隐藏 -->
+    <div class="loading" id="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>处理中...</p>
+    </div>
+
+    <!-- 日志模态框 -->
+    <div class="logs-modal" id="logsModal" style="display: none;">
+        <div class="logs-modal-content">
+            <div class="logs-modal-header">
+                <h3>📊 API调用日志</h3>
+                <div class="logs-header-actions">
+                    <button class="logs-clear-btn" id="clearLogsBtn">🗑️ 清空</button>
+                    <button class="logs-close-btn" id="closeLogsBtn">✕</button>
+                </div>
+            </div>
+            <div class="logs-modal-body">
+                <div class="logs-stats">
+                    <div class="logs-stat">
+                        <span class="logs-stat-label">总请求数:</span>
+                        <span class="logs-stat-value" id="totalRequests">0</span>
+                    </div>
+                    <div class="logs-stat">
+                        <span class="logs-stat-label">成功:</span>
+                        <span class="logs-stat-value" id="successRequests">0</span>
+                    </div>
+                    <div class="logs-stat">
+                        <span class="logs-stat-label">失败:</span>
+                        <span class="logs-stat-value" id="failedRequests">0</span>
+                    </div>
+                </div>
+                <div class="logs-container" id="logsContainer">
+                    <div class="logs-empty">
+                        <p>暂无日志记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://gosspublic.alicdn.com/aliyun-oss-sdk-6.17.1.min.js"></script>
+    <script type="module" src="script.js"></script>
+    <style>
+        .view-full-response-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .view-full-response-btn:hover {
+            background: #0056b3;
+        }
+
+        .raw-data-info {
+            background: #e8f4fd;
+            color: #0c5460;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            border-left: 3px solid #007bff;
+        }
+    </style>
+</body>
+</html>
