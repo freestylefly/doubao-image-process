@@ -49,7 +49,10 @@ const upload = multer({
 app.post('/api/doubao', async (req, res) => {
     const { apiKey, requestData } = req.body;
     
-    if (!apiKey) {
+    // 优先使用环境变量中的API Key，如果没有则使用前端传递的
+    const finalApiKey = process.env.DOUBAO_API_KEY || apiKey;
+    
+    if (!finalApiKey) {
         return res.status(400).json({ error: 'API Key is required' });
     }
 
@@ -61,7 +64,7 @@ app.post('/api/doubao', async (req, res) => {
         
         // 根据是否有图像处理工具决定headers
         const headers = {
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${finalApiKey}`,
             'Content-Type': 'application/json'
         };
         
@@ -148,7 +151,17 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
 
         const { ossConfig } = req.body;
         
-        if (!ossConfig || !ossConfig.accessKeyId || !ossConfig.accessKeySecret || !ossConfig.bucket || !ossConfig.region) {
+        // 优先使用环境变量中的OSS配置，如果没有则使用前端传递的
+        const finalOssConfig = {
+            accessKeyId: process.env.OSS_ACCESS_KEY_ID || (ossConfig && ossConfig.accessKeyId),
+            accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET || (ossConfig && ossConfig.accessKeySecret),
+            bucket: process.env.OSS_BUCKET || (ossConfig && ossConfig.bucket),
+            region: process.env.OSS_REGION || (ossConfig && ossConfig.region),
+            path: process.env.OSS_PATH || (ossConfig && ossConfig.path) || '',
+            domain: process.env.OSS_DOMAIN || (ossConfig && ossConfig.domain)
+        };
+        
+        if (!finalOssConfig.accessKeyId || !finalOssConfig.accessKeySecret || !finalOssConfig.bucket || !finalOssConfig.region) {
             return res.status(400).json({ error: 'OSS配置信息不完整' });
         }
 
@@ -161,17 +174,17 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
 
         // 创建OSS客户端
         const client = new OSS({
-            region: ossConfig.region,
-            accessKeyId: ossConfig.accessKeyId,
-            accessKeySecret: ossConfig.accessKeySecret,
-            bucket: ossConfig.bucket
+            region: finalOssConfig.region,
+            accessKeyId: finalOssConfig.accessKeyId,
+            accessKeySecret: finalOssConfig.accessKeySecret,
+            bucket: finalOssConfig.bucket
         });
 
         // 生成文件名
         const ext = path.extname(req.file.originalname) || '.jpg';
         const timestamp = Date.now();
         const random = Math.random().toString(36).substring(7);
-        const fileName = `${ossConfig.path || ''}image-${timestamp}-${random}${ext}`;
+        const fileName = `${finalOssConfig.path}image-${timestamp}-${random}${ext}`;
 
         console.log('上传文件到OSS:', fileName);
 
@@ -180,8 +193,8 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
 
         // 构造返回URL
         let imageUrl;
-        if (ossConfig.domain) {
-            imageUrl = `${ossConfig.domain.replace(/\/$/, '')}/${fileName}`;
+        if (finalOssConfig.domain) {
+            imageUrl = `${finalOssConfig.domain.replace(/\/$/, '')}/${fileName}`;
         } else {
             imageUrl = result.url;
         }

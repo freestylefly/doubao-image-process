@@ -165,7 +165,8 @@ start_service() {
     local actual_error_log_file="${ERROR_LOG_FILE:-$APP_NAME.error.log}"
     
     # 设置环境变量并启动服务
-    PORT=$PORT nohup node server.js > "$actual_log_file" 2> "$actual_error_log_file" &
+    # 使用env命令确保所有环境变量都传递给Node.js进程
+    env nohup node server.js > "$actual_log_file" 2> "$actual_error_log_file" &
     local pid=$!
     
     # 保存PID
