@@ -142,7 +142,20 @@ class DoubaoImageChat {
         // 检查API Key：前端有配置或服务端已配置
         const hasApiKey = this.apiKey.length > 0 || (this.serverConfig && this.serverConfig.hasDoubaoApiKey);
         
-
+        // 检查OSS配置：前端有配置或服务端已配置
+        const frontendOssConfigured = this.isOssConfigured();
+        const serverOssConfigured = this.serverConfig && this.serverConfig.hasOssConfig;
+        const hasOssConfig = frontendOssConfigured || serverOssConfigured;
+        
+        console.log('按钮状态更新:', {
+            hasText,
+            hasImage,
+            hasImageUrl,
+            hasApiKey,
+            frontendOssConfigured,
+            serverOssConfigured,
+            hasOssConfig
+        });
         
         this.sendBtn.disabled = !(hasText || hasImage || hasImageUrl) || !hasApiKey;
         
@@ -626,6 +639,37 @@ class DoubaoImageChat {
         }
     }
 
+    async uploadToServerOss(imageFile) {
+        console.log('🌐 使用服务端OSS配置上传图片...');
+        
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        // 不传递ossConfig，让服务端使用环境变量中的配置
+        
+        const response = await fetch('/api/upload-oss', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.details || errorData.error || '服务端OSS上传失败');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ 服务端OSS上传成功:', result.url);
+            
+            this.currentImageUrl = result.url;
+            this.currentImage = imageFile;
+            
+            return result.url;
+        } else {
+            throw new Error('服务端OSS上传返回失败状态');
+        }
+    }
+
     async uploadImageToServer(imageFile) {
         console.log('开始上传图片...', {
             name: imageFile.name,
@@ -633,10 +677,19 @@ class DoubaoImageChat {
             size: imageFile.size
         });
         
+        // 检查OSS配置：前端配置或服务端配置
+        const frontendOssConfigured = this.isOssConfigured();
+        const serverOssConfigured = this.serverConfig && this.serverConfig.hasOssConfig;
+        
+        console.log('OSS配置状态:', {
+            frontendOssConfigured,
+            serverOssConfigured
+        });
+        
         // 优先尝试OSS上传
-        if (this.isOssConfigured()) {
+        if (frontendOssConfigured) {
             try {
-                console.log('🗂️ 使用阿里云OSS上传图片...');
+                console.log('🗂️ 使用前端阿里云OSS配置上传图片...');
                 console.log('OSS配置:', {
                     region: this.ossConfig.region,
                     bucket: this.ossConfig.bucket,
@@ -646,8 +699,16 @@ class DoubaoImageChat {
                 });
                 return await this.uploadToOss(imageFile);
             } catch (error) {
-                console.warn('⚠️ OSS上传失败，使用备选方案:', error);
-                this.showError(`OSS上传失败: ${error.message}，使用公网图床...`);
+                console.warn('⚠️ 前端OSS上传失败，尝试其他方案:', error);
+                this.showError(`前端OSS上传失败: ${error.message}，尝试其他方案...`);
+            }
+        } else if (serverOssConfigured) {
+            try {
+                console.log('🗂️ 使用服务端阿里云OSS配置上传图片...');
+                return await this.uploadToServerOss(imageFile);
+            } catch (error) {
+                console.warn('⚠️ 服务端OSS上传失败，使用备选方案:', error);
+                this.showError(`服务端OSS上传失败: ${error.message}，使用公网图床...`);
             }
         } else {
             console.log('🚫 OSS未配置，使用公网图床...');

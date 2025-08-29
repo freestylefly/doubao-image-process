@@ -171,8 +171,8 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
         console.log('服务端OSS上传开始...', {
             fileName: req.file.originalname,
             size: req.file.size,
-            bucket: ossConfig.bucket,
-            region: ossConfig.region
+            bucket: finalOssConfig.bucket,
+            region: finalOssConfig.region
         });
 
         // 创建OSS客户端
@@ -180,7 +180,8 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
             region: finalOssConfig.region,
             accessKeyId: finalOssConfig.accessKeyId,
             accessKeySecret: finalOssConfig.accessKeySecret,
-            bucket: finalOssConfig.bucket
+            bucket: finalOssConfig.bucket,
+            endpoint: `https://${finalOssConfig.region}.aliyuncs.com`
         });
 
         // 生成文件名
