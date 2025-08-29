@@ -84,6 +84,67 @@ is_running() {
     return 1
 }
 
+# 加载环境配置
+load_env_config() {
+    local env_file=".env.production"
+    
+    if [[ -f "$env_file" ]]; then
+        log_info "发现生产环境配置文件: $env_file"
+        log_info "加载环境变量..."
+        
+        # 读取并导出环境变量
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            # 跳过注释和空行
+            if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line// }" ]]; then
+                continue
+            fi
+            
+            # 导出环境变量
+            if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+                export "$line"
+                # 显示已加载的配置（隐藏敏感信息）
+                local key=$(echo "$line" | cut -d'=' -f1)
+                local value=$(echo "$line" | cut -d'=' -f2-)
+                if [[ "$key" =~ (KEY|SECRET|PASSWORD) ]] && [[ -n "$value" ]]; then
+                    log_info "  ✓ $key=***（已隐藏）"
+                elif [[ -n "$value" ]]; then
+                    log_info "  ✓ $key=$value"
+                else
+                    log_warning "  ⚠ $key=（未设置）"
+                fi
+            fi
+        done < "$env_file"
+        
+        # 如果.env.production中设置了PORT，使用该值
+        if [[ -n "$PORT" ]] && [[ "$PORT" != "9848" ]]; then
+            log_info "使用配置文件中的端口: $PORT"
+        fi
+        
+        log_success "环境配置加载完成"
+    else
+        log_info "未找到生产环境配置文件: $env_file"
+        log_info "将使用默认配置，用户可在页面上手动输入配置"
+    fi
+}
+
+# 创建必要的目录
+create_directories() {
+    # 创建日志目录（如果配置了自定义日志路径）
+    if [[ -n "$LOG_FILE" ]] && [[ "$LOG_FILE" != "$APP_NAME.log" ]]; then
+        local log_dir=$(dirname "$LOG_FILE")
+        if [[ ! -d "$log_dir" ]]; then
+            log_info "创建日志目录: $log_dir"
+            mkdir -p "$log_dir"
+        fi
+    fi
+    
+    # 创建上传目录
+    if [[ ! -d "uploads" ]]; then
+        log_info "创建上传目录: uploads"
+        mkdir -p "uploads"
+    fi
+}
+
 # 启动服务
 start_service() {
     if is_running; then
@@ -91,10 +152,20 @@ start_service() {
         return 0
     fi
     
+    # 加载环境配置
+    load_env_config
+    
+    # 创建必要的目录
+    create_directories
+    
     log_info "启动服务..."
     
+    # 确定实际使用的日志文件路径
+    local actual_log_file="${LOG_FILE:-$APP_NAME.log}"
+    local actual_error_log_file="${ERROR_LOG_FILE:-$APP_NAME.error.log}"
+    
     # 设置环境变量并启动服务
-    PORT=$PORT nohup node server.js > "$LOG_FILE" 2> "$ERROR_LOG_FILE" &
+    PORT=$PORT nohup node server.js > "$actual_log_file" 2> "$actual_error_log_file" &
     local pid=$!
     
     # 保存PID
@@ -108,8 +179,10 @@ start_service() {
         log_success "服务启动成功！PID: $pid"
         log_info "服务运行在端口: $PORT"
         log_info "访问地址: http://localhost:$PORT"
+        log_info "日志文件: $actual_log_file"
+        log_info "错误日志: $actual_error_log_file"
     else
-        log_error "服务启动失败，请检查错误日志: $ERROR_LOG_FILE"
+        log_error "服务启动失败，请检查错误日志: $actual_error_log_file"
         exit 1
     fi
 }
