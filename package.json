@@ -33,6 +33,7 @@
   "dependencies": {
     "ali-oss": "^6.23.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^4.18.2",
     "multer": "^1.4.5-lts.1",
     "node-fetch": "^3.3.2"
@@ -53,4 +54,3 @@
   },
   "homepage": "https://github.com/yourusername/doubao-image-process-chat#readme"
 }
-

@@ -1,3 +1,6 @@
+// 加载环境变量
+require('dotenv').config({ path: '.env.production' });
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -259,6 +262,37 @@ app.get('/api/proxy-image', async (req, res) => {
 // 首页路由
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// 配置状态检查路由
+app.get('/api/config-status', (req, res) => {
+    try {
+        const configStatus = {
+            hasDoubaoApiKey: !!process.env.DOUBAO_API_KEY,
+            hasOssConfig: !!(
+                process.env.OSS_ACCESS_KEY_ID && 
+                process.env.OSS_ACCESS_KEY_SECRET && 
+                process.env.OSS_BUCKET && 
+                process.env.OSS_REGION
+            ),
+            ossConfigDetails: {
+                hasAccessKeyId: !!process.env.OSS_ACCESS_KEY_ID,
+                hasAccessKeySecret: !!process.env.OSS_ACCESS_KEY_SECRET,
+                hasBucket: !!process.env.OSS_BUCKET,
+                hasRegion: !!process.env.OSS_REGION,
+                hasPath: !!process.env.OSS_PATH,
+                hasDomain: !!process.env.OSS_DOMAIN
+            }
+        };
+        
+        res.json(configStatus);
+    } catch (error) {
+        console.error('Config status check error:', error);
+        res.status(500).json({ 
+            error: '配置状态检查失败',
+            details: error.message 
+        });
+    }
 });
 
 // 健康检查路由

@@ -138,9 +138,22 @@ class DoubaoImageChat {
         const hasText = this.messageInput.value.trim().length > 0;
         const hasImage = this.currentImage !== null;
         const hasImageUrl = this.currentImageUrl && this.currentImageUrl.trim().length > 0;
-        const hasApiKey = this.apiKey.length > 0;
+        
+        // 检查API Key：前端有配置或服务端已配置
+        const hasApiKey = this.apiKey.length > 0 || (this.serverConfig && this.serverConfig.hasDoubaoApiKey);
+        
+
         
         this.sendBtn.disabled = !(hasText || hasImage || hasImageUrl) || !hasApiKey;
+        
+        // 更新按钮文本提示
+        if (!hasApiKey) {
+            this.sendBtn.title = '请先配置API Key';
+        } else if (!(hasText || hasImage || hasImageUrl)) {
+            this.sendBtn.title = '请输入文字或选择图片';
+        } else {
+            this.sendBtn.title = '发送消息';
+        }
     }
 
     toggleUrlInput() {
@@ -211,7 +224,7 @@ class DoubaoImageChat {
         this.updateSendButton();
     }
 
-    loadSettings() {
+    async loadSettings() {
         // 从本地存储加载设置
         const savedApiKey = localStorage.getItem('doubao_api_key');
         const savedStreamMode = localStorage.getItem('doubao_stream_mode');
@@ -235,6 +248,9 @@ class DoubaoImageChat {
         // 加载OSS设置
         this.loadOssSettings();
         
+        // 检查服务端配置状态
+        await this.checkServerConfig();
+        
         this.updateSendButton();
     }
 
@@ -250,6 +266,29 @@ class DoubaoImageChat {
         
         // 存储到实例变量
         this.ossConfig = ossSettings;
+    }
+
+    async checkServerConfig() {
+        try {
+            const response = await fetch('/api/config-status');
+            if (response.ok) {
+                const configStatus = await response.json();
+                
+                // 存储服务端配置状态
+                this.serverConfig = configStatus;
+                
+                // 如果服务端有API Key配置，且前端没有配置，则使用服务端配置
+                if (configStatus.hasDoubaoApiKey && !this.apiKey) {
+                    this.apiKey = 'server-configured'; // 标记为服务端已配置
+                }
+            } else {
+                console.warn('无法获取服务端配置状态');
+                this.serverConfig = { hasDoubaoApiKey: false, hasOssConfig: false };
+            }
+        } catch (error) {
+            console.warn('检查服务端配置失败:', error);
+            this.serverConfig = { hasDoubaoApiKey: false, hasOssConfig: false };
+        }
     }
 
     saveOssSettings() {
