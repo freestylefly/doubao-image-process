@@ -1,5 +1,5 @@
-# 使用官方Node.js运行时作为基础镜像
-FROM node:18-alpine
+# 使用阿里云镜像源的Node.js运行时作为基础镜像（解决网络连接问题）
+FROM registry.cn-hangzhou.aliyuncs.com/library/node:18-alpine
 
 # 设置工作目录
 WORKDIR /app

@@ -386,7 +386,22 @@ find $BACKUP_DIR -name "uploads-*.tar.gz" -mtime +7 -delete
 
 ### 常见问题
 
-#### 1. 服务无法启动
+#### 1. Docker 网络连接超时
+
+**症状：** Docker Hub 连接超时错误
+
+**解决方案：**
+```bash
+# 如果遇到 Docker Hub 连接超时错误，运行修复脚本
+./fix-docker-network.sh
+
+# 或者手动使用国内镜像源
+# 已自动配置使用阿里云镜像源
+```
+
+详细解决方案请查看：`DOCKER_NETWORK_TROUBLESHOOTING.md`
+
+#### 2. 服务无法启动
 
 **症状：** 容器或服务启动失败
 
@@ -402,7 +417,34 @@ sudo netstat -tlnp | grep :3000
 docker-compose exec doubao-app env | grep DOUBAO
 ```
 
-#### 2. API调用失败
+#### 3. 端口被占用
+
+**解决方案：**
+```bash
+# 查看端口占用
+lsof -i :3000
+# 或者修改端口
+PORT=3001 npm start
+```
+
+#### 4. 权限问题
+
+**解决方案：**
+```bash
+# 确保有正确的文件权限
+chmod +x deploy.sh start-production.sh fix-docker-network.sh
+```
+
+#### 5. 环境变量未设置
+
+**解决方案：**
+```bash
+# 检查环境变量
+echo $DOUBAO_API_KEY
+echo $OSS_ACCESS_KEY_ID
+```
+
+#### 6. API调用失败
 
 **症状：** 豆包API返回错误
 
@@ -418,7 +460,7 @@ curl -I http://ark.cn-beijing.volces.com
 docker-compose logs doubao-app | grep "豆包API"
 ```
 
-#### 3. 文件上传失败
+#### 7. 文件上传失败
 
 **症状：** 图片上传返回错误
 
@@ -434,7 +476,7 @@ df -h
 grep MAX_FILE_SIZE .env.production
 ```
 
-#### 4. 内存不足
+#### 8. 内存不足
 
 **症状：** 应用响应缓慢或崩溃
 
