@@ -154,6 +154,18 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
 
         const { ossConfig } = req.body;
         
+        // 添加环境变量调试信息
+        console.log('环境变量检查:', {
+            OSS_ACCESS_KEY_ID: process.env.OSS_ACCESS_KEY_ID ? '***已设置***' : '未设置',
+            OSS_ACCESS_KEY_SECRET: process.env.OSS_ACCESS_KEY_SECRET ? '***已设置***' : '未设置',
+            OSS_BUCKET: process.env.OSS_BUCKET || '未设置',
+            OSS_REGION: process.env.OSS_REGION || '未设置',
+            OSS_PATH: process.env.OSS_PATH || '未设置',
+            OSS_DOMAIN: process.env.OSS_DOMAIN || '未设置'
+        });
+        
+        console.log('前端传递的OSS配置:', ossConfig);
+        
         // 优先使用环境变量中的OSS配置，如果没有则使用前端传递的
         const finalOssConfig = {
             accessKeyId: process.env.OSS_ACCESS_KEY_ID || (ossConfig && ossConfig.accessKeyId),
@@ -163,6 +175,19 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
             path: process.env.OSS_PATH || (ossConfig && ossConfig.path) || '',
             domain: process.env.OSS_DOMAIN || (ossConfig && ossConfig.domain)
         };
+        
+        // 检查配置是否为undefined
+        if (finalOssConfig.bucket === undefined) {
+            console.error('❌ bucket配置为undefined，环境变量和前端配置都未提供有效值');
+            return res.status(400).json({ 
+                error: 'OSS bucket配置缺失',
+                debug: {
+                    envBucket: process.env.OSS_BUCKET,
+                    frontendBucket: ossConfig && ossConfig.bucket,
+                    finalBucket: finalOssConfig.bucket
+                }
+            });
+        }
         
         if (!finalOssConfig.accessKeyId || !finalOssConfig.accessKeySecret || !finalOssConfig.bucket || !finalOssConfig.region) {
             return res.status(400).json({ error: 'OSS配置信息不完整' });
@@ -175,6 +200,16 @@ app.post('/api/upload-oss', multer().single('image'), async (req, res) => {
             region: finalOssConfig.region
         });
 
+        // 添加调试信息
+        console.log('OSS配置详情:', {
+            accessKeyId: finalOssConfig.accessKeyId ? '***已设置***' : '未设置',
+            accessKeySecret: finalOssConfig.accessKeySecret ? '***已设置***' : '未设置',
+            bucket: finalOssConfig.bucket || '未设置',
+            region: finalOssConfig.region || '未设置',
+            path: finalOssConfig.path || '未设置',
+            domain: finalOssConfig.domain || '未设置'
+        });
+        
         // 创建OSS客户端
         const client = new OSS({
             region: finalOssConfig.region,

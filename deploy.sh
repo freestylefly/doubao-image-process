@@ -99,7 +99,7 @@ load_env_config() {
                 continue
             fi
             
-            # 导出环境变量
+            # 导出环境变量（修复正则表达式，移除空格要求）
             if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
                 export "$line"
                 # 显示已加载的配置（隐藏敏感信息）
