@@ -6,7 +6,7 @@ const fs = require('fs');
 const OSS = require('ali-oss');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9848;
 
 // 中间件
 app.use(cors());
